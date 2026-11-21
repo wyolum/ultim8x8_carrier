@@ -20,6 +20,10 @@ one controller only):
       Pin 23 (SCK) = clock, pin 19 (MOSI) = data. The AlaMode's TXS0108
       translator needs 3.3 V on pin 1, made here by U2 (MCP1700-3302) with
       C3 and C4. D3 feeds 5 V to pins 2 and 4.
+Step 6: protection and test points. F1 mini blade fuse holder between J2
+and the +5V pour, D4 across the supply after the fuse (cathode on +5V) so a
+reversed supply blows the fuse, and test pads TP1 CLK_IN, TP2 DAT_IN,
+TP3 GND, TP4 +5V on the clock/data pair.
 Step 5: the v2 tile's four 2x2 "diamond" headers (In1, In2, Out1, Out2)
 under every tile, except three that a controller header sits on. Every
 tile keeps at least one In and one Out.
@@ -85,8 +89,15 @@ FPD = "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/"
 # Supply entry, board mm, LED-side view, parts on the back: J2 and C1 in the
 # square between tiles T1 and T4 that has no tile pad, screw head or diamond.
 FREE_BOX = (-19.3, -42.2, 19.3, -18.7)     # x0, y0, x1, y1
-J2_AT = (-9.0, -30.48)
-C1_AT = (8.5, -34.0)                # off the tile seam, clear of the front silkscreen outlines
+J2_AT = (-9.0, -35.0)               # every through-hole pad here stays off the tile seam at
+C1_AT = (9.5, -34.5)                # y = -30.48, where the front silkscreen outlines run
+F1_AT = (-9.0, -23.0)
+D4_AT = (10.5, -23.0)
+VIN_W = 3.0                        # J2 to fuse, on both layers
+TEST_POINTS = (("TP1", "CLK_IN", "CLK", (-33.0, 10.0), (-30.9, 10.0), False),
+               ("TP2", "DAT_IN", "DAT", (-28.0, 14.0), (-30.05, 14.0), False),
+               ("TP3", "GND", "GND", (-33.0, 18.0), None, True),
+               ("TP4", "+5V", "5V", (-28.0, 6.0), None, False))
 # Pico 2 W: USB end toward the -x wall, top facing the rear cover. Tile holes
 # lie on a 15.24 grid; a Pico centered on a hole row puts its two pin rows
 # 6.35 and 8.89 from the nearest hole rows, so no pin meets a tile pad.
@@ -467,15 +478,38 @@ def add_input_block(board, nets):
     relief(d1.FindPadByNumber("2"))
     add_track(board, nets["VSYS"], [xy(d1.FindPadByNumber("1")), pico_pin(39)], B, 0.5)
 
-    # J2: supply in. Solid pour connections here, it carries the full current.
+    # J2: supply in, then F1, then the +5V pour. Solid pour connections on
+    # this path, it carries the full current.
+    vin = nets["VIN"]
     j2 = place_back(board, "TerminalBlock_Phoenix",
                     "TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",
                     "J2", "5V in", J2_AT, 90)
     j2_pads = sorted(j2.Pads(), key=lambda p: -xy(p)[1])
-    j2_pads[0].SetNet(v5)
+    j2_pads[0].SetNet(vin)
     j2_pads[1].SetNet(gnd)
     for pad, text in zip(j2_pads, ("+5V", "GND")):
         back_label(board, text, J2_AT[0] - 8.0, xy(pad)[1], 1.0)
+    f1 = place_back(board, "Fuse", "Fuseholder_Blade_Mini_Keystone_3568", "F1",
+                    "mini blade fuse, rating to suit the supply", F1_AT, 0)
+    f_in = sorted((p for p in f1.Pads() if p.GetNumber() == "1"), key=lambda p: xy(p)[1])
+    for pad in f1.Pads():
+        pad.SetNet(vin if pad.GetNumber() == "1" else v5)
+    a, lo, hi = xy(j2_pads[0]), xy(f_in[0]), xy(f_in[1])
+    for layer in (pcbnew.F_Cu, B):
+        add_track(board, vin, [a, (lo[0], a[1] + abs(lo[0] - a[0])), lo, hi], layer, VIN_W)
+    f1.Reference().SetPosition(pt(F1_AT[0], F1_AT[1] + 4.6))
+    # D4: across the supply after the fuse, cathode on +5V. Reversed supply
+    # forward-biases it and blows F1. Anode to the ground pour through four vias.
+    d4 = place_back(board, "Diode_SMD", "D_SMC", "D4", "SS54 or S5B", D4_AT, 0)
+    d4.FindPadByNumber("1").SetNet(v5)
+    d4.FindPadByNumber("2").SetNet(gnd)
+    relief(d4.FindPadByNumber("1"))
+    an = xy(d4.FindPadByNumber("2"))
+    out = 1 if an[0] > D4_AT[0] else -1
+    for dy in (-1.8, -0.6, 0.6, 1.8):
+        add_via(board, gnd, an[0] + out * 2.6, an[1] + dy)
+    add_track(board, gnd, [an, (an[0] + out * 2.6, an[1])], B, 3.0)
+    d4.Reference().SetPosition(pt(D4_AT[0], D4_AT[1] + 4.6))
 
     # C1: bulk capacitor, pad 1 is the positive lead
     c1 = place_back(board, "Capacitor_THT", "CP_Radial_D10.0mm_P5.00mm", "C1", "1000u 10V", C1_AT, 0)
@@ -485,7 +519,7 @@ def add_input_block(board, nets):
         relief(pad)
 
     # the tall parts must stay inside the pad-free square
-    for fp in (j2, c1):
+    for fp in (j2, c1, f1, d4):
         box = fp.GetCourtyard(pcbnew.B_CrtYd).BBox()
         x0, x1 = pcbnew.ToMM(box.GetLeft()) - CENTER[0], pcbnew.ToMM(box.GetRight()) - CENTER[0]
         y0, y1 = CENTER[1] - pcbnew.ToMM(box.GetBottom()), CENTER[1] - pcbnew.ToMM(box.GetTop())
@@ -757,6 +791,38 @@ def add_diamonds(board, nets):
           ", ".join(f"T{n} {c}" for n, c in sorted(DIAMOND_SKIP)), "left out")
 
 
+def add_test_points(board, nets):
+    """Test pads on the back. Signal pads hang off the clock/data pair on a
+    short stub; the ground one is a plated hole into the front pour."""
+    for ref, net, text, at, tap, tht in TEST_POINTS:
+        name = "TestPoint_THTPad_D2.0mm_Drill1.0mm" if tht else "TestPoint_Pad_D1.5mm"
+        tp = place_back(board, "TestPoint", name, ref, net, at, 0)
+        pad = list(tp.Pads())[0]
+        pad.SetNet(nets[net])
+        tp.Reference().SetVisible(False)
+        tp.Value().SetVisible(False)
+        if tap is not None:
+            add_track(board, nets[net], [tap, at], pcbnew.B_Cu, FINE_W)
+        side = -1 if at[0] < -30.48 else 1
+        back_label(board, text, at[0] + side * 2.9, at[1], 0.9)
+
+
+def add_notes(board):
+    """Assembly notes on the silkscreen."""
+    back_label(board, "FIT ONE CONTROLLER ONLY: PICO, UNO OR ALAMODE", -47.0, -93.2, 1.3)
+    back_label(board, "NO U1: BRIDGE PINS 8-9 AND 11-12", -47.0, -96.2, 1.3)
+    for n, (col, row) in enumerate(CHAIN):
+        lines = ["OUT << IN", "TURNED 180"] if row == 0 else ["IN >> OUT"]
+        for i, text in enumerate(lines):
+            t = pcbnew.PCB_TEXT(board)
+            t.SetText(text)
+            t.SetPosition(pt(col * TILE, row * TILE + 0.3 - 2.5 * i))   # between the pad labels
+            t.SetTextSize(pcbnew.VECTOR2I(MM(1.0), MM(1.0)))
+            t.SetTextThickness(MM(0.15))
+            t.SetLayer(pcbnew.F_SilkS)
+            board.Add(t)
+
+
 def add_screws(board):
     pos = [(x * ROD_C, y * ROD_C) for x in (-1, 1) for y in (-1, 1)]
     pos += [(ROD_C, 0), (-ROD_C, 0), (0, ROD_C), (0, -ROD_C)]
@@ -785,7 +851,7 @@ def dump_pads(path, out_json):
         for pad in fp.Pads():
             p = pad.GetPosition()
             rows.append(dict(
-                ref=fp.GetReference(), pad=pad.GetNumber(), net=pad.GetNetname(),
+                ref=fp.GetReference(), value=fp.GetValue(), pad=pad.GetNumber(), net=pad.GetNetname(),
                 x=round(pcbnew.ToMM(p.x) - CENTER[0], 4), y=round(CENTER[1] - pcbnew.ToMM(p.y), 4),
                 drill=pcbnew.ToMM(pad.GetDrillSize().x), size=pcbnew.ToMM(pad.GetSize().x),
                 plated=pad.GetAttribute() == pcbnew.PAD_ATTRIB_PTH))
@@ -802,7 +868,7 @@ def main():
     out = sys.argv[1]
     board = pcbnew.BOARD()
     nets = {}
-    for name in ["+5V", "GND", "CLK_IN", "DAT_IN", "VSYS", "UNO_5V", "ALA_5V", "ALA_3V3"] + [f"{s}{i}" for s in ("CLK", "DAT") for i in range(len(CHAIN) + 1)]:
+    for name in ["+5V", "GND", "CLK_IN", "DAT_IN", "VSYS", "UNO_5V", "ALA_5V", "ALA_3V3", "VIN"] + [f"{s}{i}" for s in ("CLK", "DAT") for i in range(len(CHAIN) + 1)]:
         nets[name] = pcbnew.NETINFO_ITEM(board, name)
         board.Add(nets[name])
     add_outline(board)
@@ -815,6 +881,8 @@ def main():
     ala = add_alamode(board, nets)
     add_bus(board, nets, uno, ala)
     add_diamonds(board, nets)
+    add_test_points(board, nets)
+    add_notes(board)
     add_pour(board, nets["GND"], pcbnew.F_Cu)
     add_pour(board, nets["+5V"], pcbnew.B_Cu)
     # The pours are saved unfilled: filling from this script crashes KiCad 10's
