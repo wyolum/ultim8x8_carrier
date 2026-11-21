@@ -96,13 +96,14 @@ def main():
                       7000, mirror=True)
         small = back.resize((2000, 2000), Image.LANCZOS)
         small.save(os.path.join(DOCS, f"{DATE}_back_overview.png"), optimize=True)
-        crop(back, (-93, -74, -36, -36), True, "back_pico_shifter")
-        crop(back, (-82, -36, -40, -12), True, "back_power_entry")
+        crop(back, (-93, -72, -36, -24), True, "back_pico_shifter")
+        crop(back, (-22, -44, 22, -18), True, "back_power_entry")
         crop(back, (-24, 66, 34, 86), True, "back_alamode_header")
         crop(back, (28, 20, 104, 84), True, "back_uno")
         # front of the board (tile side), pours hidden
         front = export(nofill, "B.Cu,F.Cu,F.SilkS,Edge.Cuts", os.path.join(tmp, "front.png"), 7000)
         crop(front, (40, -76, 95, 15), False, "front_row_turn")
+        crop(front, (-31, -92, 31, -30), False, "front_tile_T1_diamonds")
 
 
 if __name__ == "__main__":
