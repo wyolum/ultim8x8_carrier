@@ -205,4 +205,7 @@ Please check:
 - No fuse, no reverse-polarity protection, no test points.
 - Front silkscreen has tile outlines and terminal labels only. No assembly notes, no "this row turned 180 degrees" marking.
 - The enclosure will be redesigned around this board. Nothing here has been checked against a case in 3D.
-- No license chosen for this repository yet.
+
+## License
+
+[CERN Open Hardware Licence v1.2](LICENSE), the same licence as [ULTiM8x8](https://github.com/wyolum/ultim8x8).
