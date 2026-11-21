@@ -1,0 +1,9 @@
+.history/
+*.lck
+~*
+*.kicad_prl
+*-backups/
+fp-info-cache
+__pycache__/
+pads.json
+.DS_Store
