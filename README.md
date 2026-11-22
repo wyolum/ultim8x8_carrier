@@ -32,7 +32,7 @@ The Pico drives the first tile at 3.3 V with no level shifter. Each diamond head
 | Ref | Part | Footprint | LCSC |
 |---|---|---|---|
 | J2 | 2-pin screw terminal, 5.08 mm, Phoenix 1715721 | Phoenix MKDS 1,5/2-5.08 | C480516 |
-| F1 | Mini blade fuse holder, Keystone 3568, with a 3 A mini blade fuse | library | C5249699, out of stock 2026-11-22 |
+| F1 | Mini blade fuse holder, Keystone 3568, with a 3 A mini blade fuse | library, holes opened to 2.0 mm | C5249699, out of stock 2026-11-22; XFCN XF-508P-B-B (C19727305) should also fit |
 | D4 | 5 A Schottky, SS54 | SMC | C330398 |
 | C1 | 1000 uF 10 V electrolytic, 10 mm diameter, 13 mm tall | Radial D10 P5 | C55565640 |
 | D1 | 1 A Schottky, 1N5819W | SOD-123 | C727115 |

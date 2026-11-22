@@ -67,7 +67,7 @@ SOURCE = {
     "D4": ("LGE SS54", "C330398", 1, "40 V 5 A Schottky"),
     "F1": ("Keystone 3568", "C5249699", 1,
            "LCSC stock was 0 on 2026-11-22. Possible substitute XFCN XF-508P-B-B (C19727305): pins "
-           "9.80 x 3.40 mm against this footprint's 9.92 x 3.40 mm, a tight fit in the 1.78 mm holes, not tried"),
+           "9.80 x 3.40 mm against this footprint's 9.92 x 3.40 mm, which the holes, opened to 2.0 mm, allow for; not tried"),
     "J2": ("Phoenix Contact 1715721 (MKDS 1,5/2-5,08)", "C480516", 1, ""),
 }
 # Parts with no footprint of their own.

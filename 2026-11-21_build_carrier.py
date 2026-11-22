@@ -86,6 +86,7 @@ J2_AT = (-9.0, -35.0)               # every through-hole pad here stays off the 
 C1_AT = (9.5, -34.5)                # y = -30.48, where the front silkscreen outlines run
 F1_AT = (-9.0, -23.0)
 D4_AT = (10.5, -23.0)
+F1_DRILL = 2.0                     # library footprint is 1.78; 2.0 also takes the XFCN XF-508P-B-B (pins 9.80 apart, not 9.92)
 VIN_W = 3.0                        # J2 to fuse, on both layers
 # Pico 2 W: USB end toward the -x wall, top facing the rear cover. Tile holes
 # lie on a 15.24 grid; a Pico centered on a hole row puts its two pin rows
@@ -404,6 +405,7 @@ def add_input_block(board, nets):
     f_in = sorted((p for p in f1.Pads() if p.GetNumber() == "1"), key=lambda p: xy(p)[1])
     for pad in f1.Pads():
         pad.SetNet(vin if pad.GetNumber() == "1" else v5)
+        pad.SetDrillSize(pcbnew.VECTOR2I(MM(F1_DRILL), MM(F1_DRILL)))
     a, lo, hi = xy(j2_pads[0]), xy(f_in[0]), xy(f_in[1])
     for layer in (pcbnew.F_Cu, B):
         add_track(board, vin, [a, (lo[0], a[1] + abs(lo[0] - a[0])), lo, hi], layer, VIN_W)
