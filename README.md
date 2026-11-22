@@ -32,7 +32,7 @@ The Pico drives the first tile at 3.3 V with no level shifter. Each diamond head
 | Ref | Part | Footprint |
 |---|---|---|
 | J2 | 2-pin screw terminal, 5.08 mm | Phoenix MKDS 1,5/2-5.08 |
-| F1 | Mini blade fuse holder, Keystone 3568, fuse rated to suit the supply | library |
+| F1 | Mini blade fuse holder, Keystone 3568, with a 3 A mini blade fuse | library |
 | D4 | 5 A diode, SS54 or S5B | SMC |
 | C1 | 1000 uF 10 V electrolytic, under 20 mm tall | Radial D10 P5 |
 | D1 | 1 A Schottky, MBR120 or 1N5819W | SOD-123 |
@@ -107,9 +107,9 @@ The supply goes J2 to F1 to the +5V pour. D4 sits across the supply after the fu
 
 Please check:
 - J2 and C1 polarity.
-- The J2 to F1 trace: 3 mm wide on both layers, about 12 mm long. Full white on 576 LEDs is nominally 34 A, which this entry cannot carry; the box is meant to run far below that, limited in firmware.
+- The J2 to F1 trace: 3 mm wide on both layers, about 12 mm long. Full white on 576 LEDs is nominally 34 A, which this entry cannot carry; the box runs far below that, limited in firmware. The chosen setting, a warm white (R 255, G 190, B 120) at global brightness 1/31, works out to about 155 mA per tile (calculated from 20 mA per color at full scale, not measured), so about 1.4 A for nine tiles.
 - D4 as a crowbar. It has to survive long enough to blow whatever fuse is fitted. Four 0.4 mm vias take its anode to the ground pour.
-- No fuse rating is chosen. It depends on the supply.
+- Fuse rating: 3 A, about twice the 1.4 A running current. Please say if the J2 to F1 trace or D4 looks wrong for that.
 
 ### 5. Pico 2 W
 
@@ -122,7 +122,7 @@ Clock is GP26 (pin 31) and data is GP27 (pin 32), the hardware SPI1 pair. They w
 Please check:
 - **Pico pin numbering and orientation.** The Pico's top faces away from the board. Pins 1 to 20 are the upper row in this picture, from the USB end; pins 40 down to 21 are the lower row, from the USB end.
 - **D1 direction:** anode on +5V, cathode on VSYS (pin 39), so a USB cable cannot power the LED rail.
-- **3.3 V drive.** No level shifter. A 5 V APA102 nominally wants 3.5 V for a high. Justin is testing this on a breadboard.
+- **3.3 V drive.** No level shifter. A 5 V APA102 nominally wants 3.5 V for a high, so this is 0.2 V under spec on paper. Breadboard test, 2026-11-22: one tile at 5 V driven straight from a Pico 2 W on these two pins, hardware SPI1 at 1 MHz, frames resent 20 times a second, showed clean steady color. That is one tile on one bench, not a guarantee for every tile. Only the first LED of T0 sees the 3.3 V signal; every LED after it gets a regenerated 5 V signal.
 - Mechanical: the Pico sits over two tile screw heads, which is why it goes on sockets and is not soldered flat.
 
 ### 6. Diamond headers for v2 tiles
@@ -182,7 +182,6 @@ The script saves the pours unfilled, because filling zones from KiCad 10's Pytho
 ## Things that are not done
 
 - The schematic is derived from the board. Nobody has drawn the circuit independently.
-- No fuse rating chosen.
 - The Gerbers have not been through a fab's checker.
 - The enclosure is being redesigned around this board and has not been checked against it in 3D.
 
