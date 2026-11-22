@@ -1,0 +1,8 @@
+group,qty,references,value,footprint
+always fitted,1,A1,Pico 2 W on 1x20 sockets,drawn in the build script
+always fitted,1,C1,1000u 10V,CP_Radial_D10.0mm_P5.00mm
+always fitted,1,D1,MBR120 / 1N5819W,D_SOD-123
+always fitted,1,D4,SS54 or S5B,D_SMC
+always fitted,1,F1,"mini blade fuse, rating to suit the supply",Fuseholder_Blade_Mini_Keystone_3568
+always fitted,1,J2,5V in,"TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
+"optional, for v2 tiles",35,T0In1 ... T8Out2 (35 headers),2x2 diamond,drawn in the build script

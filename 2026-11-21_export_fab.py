@@ -19,7 +19,7 @@ BOARD = os.path.join(HERE, "ultim_carrier.kicad_pcb")
 FAB = os.path.join(HERE, "fab")
 KC = "/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli"
 KP = "/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3"
-DATE = "2026-11-21"
+DATE = "2026-11-22"
 LAYERS = "F.Cu,B.Cu,F.Mask,B.Mask,F.Paste,B.Paste,F.SilkS,B.SilkS,Edge.Cuts"
 
 DUMP = r"""
@@ -54,8 +54,6 @@ def group(ref):
         return None                                   # bare test pads
     if ref[0] == "T" and ("In" in ref or "Out" in ref):
         return "optional, for v2 tiles"
-    if ref in ("A1", "A2", "J3", "D1", "D2", "D3", "U2", "C3", "C4"):
-        return "controller option"
     return "always fitted"
 
 
@@ -92,7 +90,7 @@ def main():
             continue
         key = (g, r["value"], r["footprint"] or "drawn in the build script")
         parts.setdefault(key, []).append(r["ref"])
-    order = {"always fitted": 0, "controller option": 1, "optional, for v2 tiles": 2}
+    order = {"always fitted": 0, "optional, for v2 tiles": 1}
     bom = os.path.join(FAB, f"{DATE}_bom.csv")
     with open(bom, "w", newline="") as f:
         w = csv.writer(f)

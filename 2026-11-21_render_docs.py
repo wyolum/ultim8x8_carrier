@@ -14,7 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 BOARD = os.path.join(HERE, "ultim_carrier.kicad_pcb")
 DOCS = os.path.join(HERE, "docs")
 KC = "/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli"
-DATE = "2026-11-21"
+DATE = "2026-11-22"
 HALF = 104.05                      # half the exported page: 208 mm board plus the outline stroke
 Image.MAX_IMAGE_PIXELS = None
 
@@ -96,10 +96,8 @@ def main():
                       7000, mirror=True)
         small = back.resize((2000, 2000), Image.LANCZOS)
         small.save(os.path.join(DOCS, f"{DATE}_back_overview.png"), optimize=True)
-        crop(back, (-93, -72, -36, -24), True, "back_pico_shifter")
+        crop(back, (-93, -74, -36, -24), True, "back_pico")
         crop(back, (-22, -44, 22, -18), True, "back_power_entry")
-        crop(back, (-24, 66, 34, 86), True, "back_alamode_header")
-        crop(back, (28, 20, 104, 84), True, "back_uno")
         # front of the board (tile side), pours hidden
         front = export(nofill, "B.Cu,F.Cu,F.SilkS,Edge.Cuts", os.path.join(tmp, "front.png"), 7000)
         crop(front, (40, -76, 95, 15), False, "front_row_turn")

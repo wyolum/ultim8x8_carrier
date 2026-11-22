@@ -1,38 +1,27 @@
 """2026-11-21 Build the carrier PCB for the 3x3 ULTiM8x8 light box.
+Simplified 2026-11-22: one controller (Pico 2 W), no level shifter.
 
-Step 1: board outline, the eight perimeter screw holes and the 72 tile
-terminal holes with their nets.
-Step 2: GND pour on the front (tile side), +5V pour on the back, and the
-clock and data traces from tile to tile on the front.
-Step 3: the input block on the back: J2 screw terminal for the 5 V supply
-and C1 bulk capacitor in the pad-free square between tiles T1 and T4; a
-Pico 2 W on two 1x20 sockets (A1) behind tile T0; D1 Schottky from +5V to
-VSYS so USB cannot back-feed the LED rail; U1 74AHCT125 level shifter with
-C2 under the Pico.
-  clock: Pico GP6 (pin 9, SPI0 SCK) -> U1 pin 9  -> pin 8  -> tile T0 CI
-  data:  Pico GP3 (pin 5, SPI0 TX)  -> U1 pin 12 -> pin 11 -> tile T0 DI
-Without U1, bridge its pins 8-9 and 11-12 with solder.
-Step 4: two alternative controllers on the same clock and data lines (fit
-one controller only):
-  A2  Arduino UNO, plugged face down on male headers, USB end overhanging
-      toward the +x edge. D13 = clock, D11 = data. D2 feeds its 5V pin.
-  J3  2x13 male header laid out like a Raspberry Pi P1, for a WyoLum AlaMode.
-      Pin 23 (SCK) = clock, pin 19 (MOSI) = data. The AlaMode's TXS0108
-      translator needs 3.3 V on pin 1, made here by U2 (MCP1700-3302) with
-      C3 and C4. D3 feeds 5 V to pins 2 and 4.
-Step 6: protection and test points. F1 mini blade fuse holder between J2
-and the +5V pour, D4 across the supply after the fuse (cathode on +5V) so a
-reversed supply blows the fuse, and test pads TP1 CLK_IN, TP2 DAT_IN,
-TP3 GND, TP4 +5V on the clock/data pair.
-Step 5: the v2 tile's four 2x2 "diamond" headers (In1, In2, Out1, Out2)
-under every tile, except three that a controller header sits on. Every
-tile keeps at least one In and one Out.
+What the board has:
+  - Outline, eight perimeter screw holes, and for each of the nine tiles
+    eight plated M3 terminal holes. The tile's 8 holes (an outer and an
+    inner square) are a subset of the 16 in the v2 layout, same nets, so
+    the board fits both revisions.
+  - GND pour on the front (tile side), +5V pour on the back.
+  - Clock and data traces from tile to tile on the front.
+  - Supply: J2 screw terminal -> F1 mini blade fuse -> +5V pour, with D4
+    (reverse-polarity crowbar) and C1 (bulk) across it.
+  - Pico 2 W on two 1x20 sockets (A1) behind tile T0, wired straight to the
+    first tile: GP26 (pin 31, SPI1 SCK) -> T0 clock in, GP27 (pin 32,
+    SPI1 TX) -> T0 data in. D1 Schottky from +5V to VSYS so USB cannot
+    back-feed the LED rail.
+  - The v2 tile's four 2x2 "diamond" headers (In1, In2, Out1, Out2) under
+    every tile, except T0 Out1, which the Pico's pin row crosses.
 
 Run with KiCad's own Python:
   KP=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
   $KP 2026-11-21_build_carrier.py OUT.kicad_pcb [PADS.json]
 With PADS.json it also reads the saved board back and dumps every pad, for
-the check picture (2026-11-21_plot_carrier.py).
+the check picture and the schematic.
 """
 import json
 import sys
@@ -65,10 +54,8 @@ CHAIN = [(-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 0), (-1, 1), (0, 1), (
 # 15.24 from the tile center. Pin positions and roles read from the v2 layout
 # (ultim8x8.kicad_pcb, P1 In1, P2 Out1, P5 In2, P6 Out2), LED-side view:
 D = 1.796
-# Left out: the Pico's lower pin row crosses T0 Out1, the AlaMode header
-# crosses T7 Out1, the clock/data pair to that header crosses T7 In2, and the
-# UNO power header crosses T8 Out1.
-DIAMOND_SKIP = {(0, "Out1"), (7, "Out1"), (7, "In2"), (8, "Out1")}
+# Left out: the Pico's lower pin row crosses T0 Out1.
+DIAMOND_SKIP = {(0, "Out1")}
 DIAMONDS = {
     "In1":  ((-15.24, 0.0), {"CI": (D, 0), "GND": (-D, 0), "5V": (0, D), "DI": (0, -D)}),
     "Out2": ((15.24, 0.0),  {"CO": (-D, 0), "GND": (D, 0), "5V": (0, D), "DO": (0, -D)}),
@@ -83,7 +70,7 @@ POUR = INNER - 2.0                 # copper stays 1 mm inside the frame opening,
                                    # copper lies under a wall or a perimeter screw head
 SIG_W = 0.5                        # clock and data trace width
 POUR_CLEAR = 0.4                   # pour to other copper
-FINE_W = 0.25                      # traces at the level shifter
+FINE_W = 0.25                      # diamond header traces
 VIA_D, VIA_DRILL = 0.8, 0.4
 FPD = "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints/"
 # Supply entry, board mm, LED-side view, parts on the back: J2 and C1 in the
@@ -94,10 +81,6 @@ C1_AT = (9.5, -34.5)                # y = -30.48, where the front silkscreen out
 F1_AT = (-9.0, -23.0)
 D4_AT = (10.5, -23.0)
 VIN_W = 3.0                        # J2 to fuse, on both layers
-TEST_POINTS = (("TP1", "CLK_IN", "CLK", (-33.0, 10.0), (-30.9, 10.0), False),
-               ("TP2", "DAT_IN", "DAT", (-28.0, 14.0), (-30.05, 14.0), False),
-               ("TP3", "GND", "GND", (-33.0, 18.0), None, True),
-               ("TP4", "+5V", "5V", (-28.0, 6.0), None, False))
 # Pico 2 W: USB end toward the -x wall, top facing the rear cover. Tile holes
 # lie on a 15.24 grid; a Pico centered on a hole row puts its two pin rows
 # 6.35 and 8.89 from the nearest hole rows, so no pin meets a tile pad.
@@ -108,36 +91,9 @@ PICO_ROW = 17.78                   # between the pin rows
 PICO_X1 = -92.0 + 1.5 + 1.37       # pin 1: board end 1.5 from the old wall line, pin 1.37 from the end
 PICO_SIZE = (51.0, 21.0)
 PICO_GND = (3, 8, 13, 18, 23, 28, 38)
-PICO_CLK, PICO_DAT = 9, 5          # GP6 = SPI0 SCK, GP3 = SPI0 TX
-U1_AT = (-72.0, PICO_Y)            # under the Pico, between its pin rows
-C2_AT = (-78.7, -39.6)
+PICO_CLK, PICO_DAT = 31, 32        # GP26 = SPI1 SCK, GP27 = SPI1 TX: the two pins nearest T0's inputs
 D1_AT = (-86.59, -51.4)
 TURN_JOG = 4.27                    # row-turn side step: between the hole column and the diamond pins
-# Arduino UNO, face down. In the LED-side view that is the UNO's top view,
-# here turned 180 degrees so the USB end points at +x. Standard UNO
-# coordinates (u from the USB edge, v from the power-header edge, mm):
-UNO_X0 = 100.0                     # USB edge; the connectors overhang past the outer tile screws
-UNO_Y0 = 78.51                     # power-header edge. Rows land 4.85 and 7.85 from the hole rows.
-UNO_SIZE = (68.58, 53.34)
-UNO_POWER = [("NC", 27.94), ("IOREF", 30.48), ("RESET", 33.02), ("3V3", 35.56), ("5V", 38.1),
-             ("GND1", 40.64), ("GND2", 43.18), ("VIN", 45.72)] + \
-            [(f"A{i}", 50.8 + 2.54 * i) for i in range(6)]
-UNO_DIGITAL = [(f"D{i}", 63.5 - 2.54 * i) for i in range(8)] + \
-              [(f"D{8 + i}", 41.656 - 2.54 * i) for i in range(6)] + \
-              [("GND3", 26.416), ("AREF", 23.876), ("SDA", 21.336), ("SCL", 18.796)]
-D2_AT = (61.9, 79.6)
-# AlaMode on a Pi-style 2x13 header. Seen from the back it is the AlaMode's
-# top view: socket at its top-left corner. Pin 21 sits on x = 0 so the clock
-# and data pins straddle the column between the tile holes.
-ALA_TOP = 79.756                   # AlaMode top edge; rows land 6.35 and 8.89 above a hole row
-ALA_X1 = 25.4                      # pins 1 and 2
-ALA_SIZE = (85.09, 55.88)
-ALA_GND = (6, 14, 20, 25)           # pin 9 is boxed in by the 3.3 V track; the AlaMode only uses pin 6
-D3_AT = (28.0, 74.35)
-U2_AT = (-12.0, 76.3)
-C3_AT = (-17.5, 75.6)
-C4_AT = (-13.978, 79.3)
-
 
 
 def fail(msg):
@@ -217,8 +173,7 @@ def add_tile(board, nets, n, col, row):
         fp.Add(pad)
         t = -1 if row == 0 else 1
         lx, ly = col * TILE + t * x, row * TILE + t * (y - 5.2)    # where the label lands
-        headers = [pico_pin(k) for k in range(1, 41)] + list(uno_pins().values()) + \
-                  [ala_pin(k) for k in range(1, 27)]
+        headers = [pico_pin(k) for k in range(1, 41)]
         headers += [(col * TILE + t * (ox + dx), row * TILE + t * (oy + dy))
                     for (ox, oy), pins in DIAMONDS.values() for dx, dy in pins.values()]
         if all(abs(lx - px) > 2.5 or abs(ly - py) > 1.8 for px, py in headers):
@@ -371,7 +326,7 @@ def add_pico(board, nets):
     fp.Reference().SetVisible(False)
     fp.Value().SetVisible(False)
     net_of = {n: nets["GND"] for n in PICO_GND}
-    net_of.update({PICO_CLK: nets["CLK_IN"], PICO_DAT: nets["DAT_IN"], 39: nets["VSYS"]})
+    net_of.update({PICO_CLK: nets["CLK0"], PICO_DAT: nets["DAT0"], 39: nets["VSYS"]})
     for n in range(1, 41):
         pad = pcbnew.PAD(fp)
         pad.SetNumber(str(n))
@@ -401,69 +356,18 @@ def add_input_block(board, nets):
     gnd, v5 = nets["GND"], nets["+5V"]
     add_pico(board, nets)
 
-    # U1 under the Pico: pins 1-7 along the top with pin 1 at the left, so
-    # pins 14-8 run left to right along the bottom, facing tile T0.
-    u1 = place_back(board, "Package_SO", "SOIC-14_3.9x8.7mm_P1.27mm", "U1", "74AHCT125", U1_AT, 0)
-    cx, cy = U1_AT
-    for rot in (0, 90, 180, 270):  # the pads are symmetric about the origin, so it turns in place
-        u1.SetOrientationDegrees(rot)
-        if near(xy(u1.FindPadByNumber("1")), (cx - 3.81, cy + 2.475)):
-            break
-    else:
-        fail("no rotation puts U1 pin 1 at the upper left")
-    pin = {n: xy(u1.FindPadByNumber(str(n))) for n in range(1, 15)}
-    # gate 4 (12 in, 11 out) buffers the data and gate 3 (9 in, 8 out) the
-    # clock; gates 1 and 2 are parked with inputs and enables grounded
-    u1_nets = {1: gnd, 2: gnd, 4: gnd, 5: gnd, 7: gnd, 8: nets["CLK0"], 9: nets["CLK_IN"],
-               10: gnd, 11: nets["DAT0"], 12: nets["DAT_IN"], 13: gnd, 14: v5}
-    for n, net in u1_nets.items():
-        u1.FindPadByNumber(str(n)).SetNet(net)
-    relief(u1.FindPadByNumber("14"))
-    # ground: a strip under the body, a stub from each grounded pin, two vias to the front pour
-    add_track(board, gnd, [(cx - 3.81, cy), (cx + 3.81, cy)], B, 0.5)
-    for n in (1, 2, 4, 5, 7, 10, 13):
-        add_track(board, gnd, [pin[n], (pin[n][0], cy)], B, 0.4)
-    for dx in (-3.4, 0.63):                              # clear of the two input tracks on the front
-        add_via(board, gnd, cx + dx, cy)
-
-    # inputs: from the Pico pins on the front, under U1, to a via below each input pin
-    yv = pin[12][1] - 2.6
-    for src, dst, net in ((PICO_DAT, 12, nets["DAT_IN"]), (PICO_CLK, 9, nets["CLK_IN"])):
-        a, b = pico_pin(src), pin[dst]
-        add_track(board, net, [a, (a[0], a[1] - 1.8), (b[0], a[1] - 1.8 - abs(a[0] - b[0])), (b[0], yv)],
-                  pcbnew.F_Cu, FINE_W)
-        add_via(board, net, b[0], yv)
-        add_track(board, net, [(b[0], yv), b], B, FINE_W)
-    # outputs: down between two pins of the Pico's lower row, then into tile T0
+    # Clock and data straight from the Pico to tile T0, on the back.
+    # Clock: pin 31 sits over the CI pad, so the track drops straight in.
+    # Data: pin 32 steps left around the CI pad, then down to DI.
     ci, di = pad_xy(0, "CI"), pad_xy(0, "DI")
-    row_y = pico_pin(40)[1]
-    lower_x = sorted(pico_pin(n)[0] for n in range(21, 41))
-
-    def gap_near(x):
-        mids = [(a + b) / 2 for a, b in zip(lower_x[:-1], lower_x[1:])]
-        return min(mids, key=lambda m: abs(m - x))
-    x, y = pin[11]                                       # data: past the left side of the CI pad to DI
-    xg = gap_near(x - 0.5)
-    yd = di[1] + abs(di[0] - xg)
-    add_track(board, nets["DAT0"], [(x, y), (x, row_y + 2.6), (xg, row_y + 2.6 - abs(xg - x)),
-                                    (xg, yd), di], B, FINE_W)
-    x, y = pin[8]                                        # clock: straight down into CI
-    xg = gap_near(x + 0.5)
-    add_track(board, nets["CLK0"], [(x, y), (x, row_y + 2.6), (xg, row_y + 2.6 - abs(xg - x)),
-                                    (xg, ci[1] + abs(ci[0] - xg)), ci], B, FINE_W)
-
-    # C2: decoupling at U1 pin 14, lower pad level with the pin
-    c2 = place_back(board, "Capacitor_SMD", "C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
-                    "C2", "100n", C2_AT, 90)
-    c2_pads = sorted(c2.Pads(), key=lambda p: xy(p)[1])
-    c2_pads[0].SetNet(v5)
-    c2_pads[1].SetNet(gnd)
-    relief(c2_pads[0])
-    c2.Reference().SetPosition(pt(C2_AT[0] + 0.2, C2_AT[1] - 3.3))
-    add_track(board, v5, [pin[14], xy(c2_pads[0])], B, 0.4)
-    g = xy(c2_pads[1])
-    add_track(board, gnd, [g, (g[0], g[1] + 2.1)], B, 0.4)
-    add_via(board, gnd, g[0], g[1] + 2.1)
+    c0, d0 = pico_pin(PICO_CLK), pico_pin(PICO_DAT)
+    if abs(c0[0] - ci[0]) > 3.0:
+        fail("the clock pin is not over tile T0's CI pad")
+    add_track(board, nets["CLK0"], [c0, (c0[0], ci[1] + 2.0)], B, SIG_W)
+    xs = ci[0] - TILE_PAD / 2 - 0.85                    # past the CI pad's left edge
+    y1 = (d0[1] - 0.85 + ci[1] + TILE_PAD / 2) / 2      # midway between the pin row and the CI pad
+    add_track(board, nets["DAT0"], [d0, (d0[0], y1), (xs + 0.6, y1), (xs, y1 - 0.6),
+                                    (xs, di[1] + (di[0] - xs)), di], B, SIG_W)
 
     # D1: +5V -> VSYS, cathode toward Pico pin 39
     d1 = place_back(board, "Diode_SMD", "D_SOD-123", "D1", "MBR120 / 1N5819W", D1_AT, 90)
@@ -526,45 +430,7 @@ def add_input_block(board, nets):
         print(f"  {fp.GetReference()}: x {x0:.2f} to {x1:.2f}, y {y0:.2f} to {y1:.2f}")
         if x0 < FREE_BOX[0] or y0 < FREE_BOX[1] or x1 > FREE_BOX[2] or y1 > FREE_BOX[3]:
             fail(f"{fp.GetReference()} leaves the pad-free square {FREE_BOX}")
-    back_label(board, "ULTiM8x8 3x3 carrier  2026-11-21  wyolum.com", 45.0, -95.5, 1.5)
-
-
-def uno_pins():
-    """UNO header pins: name -> board mm."""
-    pins = {name: (UNO_X0 - u, UNO_Y0 - 2.54) for name, u in UNO_POWER}
-    pins.update({name: (UNO_X0 - u, UNO_Y0 - 50.8) for name, u in UNO_DIGITAL})
-    return pins
-
-
-def ala_pin(n):
-    """Pi-header pin position. Odd pins on the lower row, pin 1 at +x."""
-    k = (n - 1) // 2
-    return (ALA_X1 - 2.54 * k, ALA_TOP - (4.826 if n % 2 else 2.286))
-
-
-def header_footprint(board, ref, value, pins, net_of, reliefs):
-    """A footprint of plain 1.0 mm drilled header pads. pins: name -> (x, y)."""
-    fp = pcbnew.FOOTPRINT(board)
-    fp.SetReference(ref)
-    fp.SetValue(value)
-    fp.Reference().SetVisible(False)
-    fp.Value().SetVisible(False)
-    for i, (name, (x, y)) in enumerate(pins.items()):
-        pad = pcbnew.PAD(fp)
-        pad.SetNumber(str(name))
-        pad.SetAttribute(pcbnew.PAD_ATTRIB_PTH)
-        pad.SetShape(pcbnew.PAD_SHAPE_RECT if i == 0 else pcbnew.PAD_SHAPE_CIRCLE)
-        pad.SetSize(pcbnew.VECTOR2I(MM(1.7), MM(1.7)))
-        pad.SetDrillSize(pcbnew.VECTOR2I(MM(1.0), MM(1.0)))
-        pad.SetLayerSet(pad.PTHMask())
-        pad.SetPosition(pt(x, y))
-        if name in net_of:
-            pad.SetNet(net_of[name])
-        if name in reliefs:
-            relief(pad)
-        fp.Add(pad)
-    board.Add(fp)
-    return fp
+    back_label(board, "ULTiM8x8 3x3 carrier  2026-11-22  wyolum.com", 45.0, -95.5, 1.5)
 
 
 def fab_box(board, x0, y0, x1, y1):
@@ -575,120 +441,6 @@ def fab_box(board, x0, y0, x1, y1):
         line.SetLayer(pcbnew.B_Fab)
         line.SetWidth(MM(0.15))
         board.Add(line)
-
-
-def diode(board, ref, at, cathode_up, k_net, a_net):
-    """SOD-123 Schottky on the back, vertical. Returns the cathode position."""
-    d = place_back(board, "Diode_SMD", "D_SOD-123", ref, "MBR120 / 1N5819W", at, 90)
-    for rot in (90, 270):
-        d.SetOrientationDegrees(rot)
-        if (xy(d.FindPadByNumber("1"))[1] > xy(d.FindPadByNumber("2"))[1]) == cathode_up:
-            break
-    else:
-        fail(f"{ref} cathode does not point the right way")
-    d.FindPadByNumber("1").SetNet(k_net)
-    d.FindPadByNumber("2").SetNet(a_net)
-    relief(d.FindPadByNumber("2"))
-    return xy(d.FindPadByNumber("1"))
-
-
-def add_uno(board, nets):
-    pins = uno_pins()
-    net_of = {"GND1": nets["GND"], "GND2": nets["GND"], "GND3": nets["GND"],
-              "5V": nets["UNO_5V"], "D13": nets["CLK_IN"], "D11": nets["DAT_IN"]}
-    header_footprint(board, "A2", "Arduino UNO, face down on male headers", pins, net_of,
-                     ("GND1", "GND2", "GND3"))
-    k = diode(board, "D2", D2_AT, False, nets["UNO_5V"], nets["+5V"])
-    add_track(board, nets["UNO_5V"], [k, pins["5V"]], pcbnew.B_Cu, 0.5)
-    fab_box(board, UNO_X0 - UNO_SIZE[0], UNO_Y0 - UNO_SIZE[1], UNO_X0, UNO_Y0)
-    fab_box(board, UNO_X0 - 10.0, UNO_Y0 - 44.5, UNO_X0 + 6.35, UNO_Y0 - 32.4)     # USB-B
-    fab_box(board, UNO_X0 - 12.5, UNO_Y0 - 12.2, UNO_X0 + 1.8, UNO_Y0 - 3.2)      # DC jack
-    back_label(board, "UNO, face down, USB at this edge", 60.96, 41.4, 1.2)
-    return pins
-
-
-def add_alamode(board, nets):
-    B = pcbnew.B_Cu
-    gnd, v5, v33 = nets["GND"], nets["+5V"], nets["ALA_3V3"]
-    pins = {n: ala_pin(n) for n in range(1, 27)}
-    net_of = {n: gnd for n in ALA_GND}
-    net_of.update({1: v33, 2: nets["ALA_5V"], 4: nets["ALA_5V"],
-                   19: nets["DAT_IN"], 23: nets["CLK_IN"]})
-    header_footprint(board, "J3", "2x13 male, Pi P1 layout, for AlaMode", pins, net_of, ALA_GND)
-    # 5 V to pins 2 and 4 through D3
-    k = diode(board, "D3", D3_AT, True, nets["ALA_5V"], v5)
-    for fp in board.GetFootprints():
-        if fp.GetReference() == "D3":
-            fp.Reference().SetPosition(pt(D3_AT[0], D3_AT[1] - 4.0))
-    add_track(board, nets["ALA_5V"], [k, pins[2], pins[4]], B, 0.5)
-    # U2: 3.3 V for the AlaMode's translator. SOT-23: 1 GND, 2 VOUT, 3 VIN.
-    u2 = place_back(board, "Package_TO_SOT_SMD", "SOT-23", "U2", "MCP1700-3302", U2_AT, 0)
-    p1, p2, p3 = (xy(u2.FindPadByNumber(n)) for n in "123")
-    if not (p3[0] > p1[0] and p2[1] > p1[1]):
-        fail("U2 is not oriented as the routing expects")
-    u2.FindPadByNumber("1").SetNet(gnd)
-    u2.FindPadByNumber("2").SetNet(v33)
-    u2.FindPadByNumber("3").SetNet(v5)
-    relief(u2.FindPadByNumber("3"))
-    gv = (p1[0] - 1.96, p1[1])
-    add_track(board, gnd, [p1, gv], B, 0.4)
-    add_via(board, gnd, *gv)
-    # C3 on the input: lower pad to ground through U2's via, upper pad in the +5V pour
-    c3 = place_back(board, "Capacitor_SMD", "C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
-                    "C3", "1u", C3_AT, 90)
-    lo, hi = sorted(c3.Pads(), key=lambda p: xy(p)[1])
-    lo.SetNet(gnd)
-    hi.SetNet(v5)
-    relief(hi)
-    a = xy(lo)
-    add_track(board, gnd, [a, (gv[0] - 0.8, a[1]), gv], B, 0.4)
-    # C4 on the output, above U2
-    c4 = place_back(board, "Capacitor_SMD", "C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
-                    "C4", "1u", C4_AT, 0)
-    left, right = sorted(c4.Pads(), key=lambda p: xy(p)[0])
-    left.SetNet(gnd)
-    right.SetNet(v33)
-    a, b = xy(left), xy(right)
-    add_track(board, gnd, [a, (a[0] - 2.0, a[1])], B, 0.4)
-    add_via(board, gnd, a[0] - 2.0, a[1])
-    add_track(board, v33, [p2, b, (b[0] + 2.4, b[1])], B, 0.4)
-    add_via(board, v33, b[0] + 2.4, b[1])
-    # 3.3 V on the front, under the odd pin row, to pin 1
-    yf = 73.1
-    add_track(board, v33, [(b[0] + 2.4, b[1]), (b[0] + 2.4, yf),
-                           (pins[1][0] - (pins[1][1] - yf), yf), pins[1]], pcbnew.F_Cu, 0.3)
-    for ref, fp, dx, dy in (("U2", u2, 3.2, -1.6), ("C3", c3, -2.6, 0.0), ("C4", c4, -1.0, 1.9)):
-        c = fp.GetPosition()
-        fp.Reference().SetPosition(pcbnew.VECTOR2I(c.x + MM(dx), c.y - MM(dy)))
-    x0 = ALA_X1 + 1.778 - ALA_SIZE[0]
-    fab_box(board, x0, ALA_TOP - ALA_SIZE[1], x0 + ALA_SIZE[0], ALA_TOP)
-    back_label(board, "AlaMode on Pi header", -20.0, 45.72, 1.2)
-    return pins
-
-
-def add_bus(board, nets, uno, ala):
-    """Clock and data from the Pico pins to the AlaMode header and on to the
-    UNO, as one pair on the back. The pair follows tile seams, where there
-    are no tile pads and no diamond headers. The clock leaves its Pico pin
-    on the front for 2.5 mm so it can start on the far side of the data
-    track; after that the order never swaps, so nothing crosses."""
-    B = pcbnew.B_Cu
-    clk, dat = nets["CLK_IN"], nets["DAT_IN"]
-    c0, d0 = pico_pin(PICO_CLK), pico_pin(PICO_DAT)
-    cA, dA = ala[23], ala[19]
-    yc, yd = -26.75, -27.6             # east along the T0/T5 seam: clock above data
-    xc, xd = -30.9, -30.05             # north along the seam between tile columns
-    yc2, yd2 = 49.45, 48.85            # east again above T7 In2
-    add_track(board, clk, [c0, (c0[0], yc)], pcbnew.F_Cu, FINE_W)
-    add_via(board, clk, c0[0], yc)
-    add_track(board, clk, [(c0[0], yc), (xc, yc), (xc, yc2), (cA[0], yc2), cA], B, FINE_W)
-    add_track(board, dat, [d0, (d0[0], yd), (xd, yd), (xd, yd2), (dA[0], yd2), dA], B, FINE_W)
-    # AlaMode pins -> between the even-row pins -> east above the header -> south on x = 30.48
-    # -> east above the UNO digital row -> down into D13 and D11
-    for net, a, yh, xv, dst in ((clk, cA, 79.6, 30.88, uno["D13"]), (dat, dA, 79.0, 30.08, uno["D11"])):
-        xt = a[0] - 1.27                               # midway between two pin columns
-        add_track(board, net, [a, (xt, a[1] + 1.27), (xt, yh), (xv, yh), (xv, xv),
-                               (dst[0], xv), dst], B, FINE_W)
 
 
 # Tracks from each diamond signal pin to the tile's own terminal pad, in
@@ -791,26 +543,8 @@ def add_diamonds(board, nets):
           ", ".join(f"T{n} {c}" for n, c in sorted(DIAMOND_SKIP)), "left out")
 
 
-def add_test_points(board, nets):
-    """Test pads on the back. Signal pads hang off the clock/data pair on a
-    short stub; the ground one is a plated hole into the front pour."""
-    for ref, net, text, at, tap, tht in TEST_POINTS:
-        name = "TestPoint_THTPad_D2.0mm_Drill1.0mm" if tht else "TestPoint_Pad_D1.5mm"
-        tp = place_back(board, "TestPoint", name, ref, net, at, 0)
-        pad = list(tp.Pads())[0]
-        pad.SetNet(nets[net])
-        tp.Reference().SetVisible(False)
-        tp.Value().SetVisible(False)
-        if tap is not None:
-            add_track(board, nets[net], [tap, at], pcbnew.B_Cu, FINE_W)
-        side = -1 if at[0] < -30.48 else 1
-        back_label(board, text, at[0] + side * 2.9, at[1], 0.9)
-
-
 def add_notes(board):
     """Assembly notes on the silkscreen."""
-    back_label(board, "FIT ONE CONTROLLER ONLY: PICO, UNO OR ALAMODE", -47.0, -93.2, 1.3)
-    back_label(board, "NO U1: BRIDGE PINS 8-9 AND 11-12", -47.0, -96.2, 1.3)
     for n, (col, row) in enumerate(CHAIN):
         lines = ["OUT << IN", "TURNED 180"] if row == 0 else ["IN >> OUT"]
         for i, text in enumerate(lines):
@@ -868,7 +602,7 @@ def main():
     out = sys.argv[1]
     board = pcbnew.BOARD()
     nets = {}
-    for name in ["+5V", "GND", "CLK_IN", "DAT_IN", "VSYS", "UNO_5V", "ALA_5V", "ALA_3V3", "VIN"] + [f"{s}{i}" for s in ("CLK", "DAT") for i in range(len(CHAIN) + 1)]:
+    for name in ["+5V", "GND", "VSYS", "VIN"] + [f"{s}{i}" for s in ("CLK", "DAT") for i in range(len(CHAIN) + 1)]:
         nets[name] = pcbnew.NETINFO_ITEM(board, name)
         board.Add(nets[name])
     add_outline(board)
@@ -877,11 +611,7 @@ def main():
         add_tile(board, nets, n, col, row)
     add_signals(board, nets)
     add_input_block(board, nets)
-    uno = add_uno(board, nets)
-    ala = add_alamode(board, nets)
-    add_bus(board, nets, uno, ala)
     add_diamonds(board, nets)
-    add_test_points(board, nets)
     add_notes(board)
     add_pour(board, nets["GND"], pcbnew.F_Cu)
     add_pour(board, nets["+5V"], pcbnew.B_Cu)
