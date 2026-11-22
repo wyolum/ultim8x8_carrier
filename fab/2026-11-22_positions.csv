@@ -2,7 +2,7 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "C1","1000u 10V","CP_Radial_D10.0mm_P5.00mm",162.000000,-182.500000,0.000000,bottom
 "D1","MBR120 / 1N5819W","D_SOD-123",68.410000,-199.400000,-90.000000,bottom
 "D4","SS54 or S5B","D_SMC",165.500000,-171.000000,0.000000,bottom
-"F1","mini blade fuse, rating to suit the supply","Fuseholder_Blade_Mini_Keystone_3568",141.040001,-172.700000,0.000000,bottom
+"F1","mini blade holder, 3 A fuse","Fuseholder_Blade_Mini_Keystone_3568",141.040001,-172.700000,0.000000,bottom
 "J2","5V in","TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal",146.000000,-185.540000,90.000000,bottom
 "A1","Pico 2 W on 1x20 sockets","",0.000000,0.000000,0.000000,top
 "H0","M3","",57.000000,-246.000000,0.000000,top

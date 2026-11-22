@@ -29,16 +29,16 @@ An earlier version of this repo also had an Arduino UNO header, an AlaMode heade
 
 The Pico drives the first tile at 3.3 V with no level shifter. Each diamond header pin is on the same net as the matching tile terminal.
 
-| Ref | Part | Footprint |
-|---|---|---|
-| J2 | 2-pin screw terminal, 5.08 mm | Phoenix MKDS 1,5/2-5.08 |
-| F1 | Mini blade fuse holder, Keystone 3568, with a 3 A mini blade fuse | library |
-| D4 | 5 A diode, SS54 or S5B | SMC |
-| C1 | 1000 uF 10 V electrolytic, under 20 mm tall | Radial D10 P5 |
-| D1 | 1 A Schottky, MBR120 or 1N5819W | SOD-123 |
-| A1 | Pico 2 W on two 1x20 sockets | drawn in script |
-| T0 to T8 | Tile terminals, 8 plated M3 holes each | drawn in script |
-| T*n*In1, In2, Out1, Out2 | 2x2 pin header turned 45 degrees, optional, for v2 tiles | drawn in script |
+| Ref | Part | Footprint | LCSC |
+|---|---|---|---|
+| J2 | 2-pin screw terminal, 5.08 mm, Phoenix 1715721 | Phoenix MKDS 1,5/2-5.08 | C480516 |
+| F1 | Mini blade fuse holder, Keystone 3568, with a 3 A mini blade fuse | library | C5249699, out of stock 2026-11-22 |
+| D4 | 5 A Schottky, SS54 | SMC | C330398 |
+| C1 | 1000 uF 10 V electrolytic, 10 mm diameter, 13 mm tall | Radial D10 P5 | C55565640 |
+| D1 | 1 A Schottky, 1N5819W | SOD-123 | C727115 |
+| A1 | Pico 2 W on two 1x20 sockets, 8.5 mm tall | drawn in script | C22373906, qty 2 |
+| T0 to T8 | Tile terminals, 8 plated M3 holes each | drawn in script | none |
+| T*n*In1, In2, Out1, Out2 | 2x2 pin header pads turned 45 degrees, for v2 tiles. **Do not populate.** | drawn in script | none |
 
 ## How the pictures are oriented
 
@@ -126,6 +126,8 @@ Please check:
 - Mechanical: the Pico sits over two tile screw heads, which is why it goes on sockets and is not soldered flat.
 
 ### 6. Diamond headers for v2 tiles
+
+**These are not populated.** The pads stay on the board, but no headers are fitted or ordered.
 
 ![Tile T1 with its four diamond headers](docs/2026-11-22_front_tile_T1_diamonds.png)
 

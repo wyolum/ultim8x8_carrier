@@ -400,7 +400,7 @@ def add_input_block(board, nets):
     for pad, text in zip(j2_pads, ("+5V", "GND")):
         back_label(board, text, J2_AT[0] - 8.0, xy(pad)[1], 1.0)
     f1 = place_back(board, "Fuse", "Fuseholder_Blade_Mini_Keystone_3568", "F1",
-                    "mini blade fuse, rating to suit the supply", F1_AT, 0)
+                    "mini blade holder, 3 A fuse", F1_AT, 0)
     f_in = sorted((p for p in f1.Pads() if p.GetNumber() == "1"), key=lambda p: xy(p)[1])
     for pad in f1.Pads():
         pad.SetNet(vin if pad.GetNumber() == "1" else v5)

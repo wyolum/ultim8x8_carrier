@@ -1,8 +1,9 @@
-group,qty,references,value,footprint
-always fitted,1,A1,Pico 2 W on 1x20 sockets,drawn in the build script
-always fitted,1,C1,1000u 10V,CP_Radial_D10.0mm_P5.00mm
-always fitted,1,D1,MBR120 / 1N5819W,D_SOD-123
-always fitted,1,D4,SS54 or S5B,D_SMC
-always fitted,1,F1,"mini blade fuse, rating to suit the supply",Fuseholder_Blade_Mini_Keystone_3568
-always fitted,1,J2,5V in,"TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal"
-"optional, for v2 tiles",35,T0In1 ... T8Out2 (35 headers),2x2 diamond,drawn in the build script
+group,qty,references,value,footprint,part to buy,LCSC,buy qty,note
+always fitted,1,A1,Pico 2 W on 1x20 sockets,drawn in the build script,"Hong Cheng HC-PM254-8.5H-1x20PZ, 1x20 socket, 8.5 mm tall",C22373906,2,two sockets for one Pico 2 W; the Pico itself is not on this list
+always fitted,1,C1,1000u 10V,CP_Radial_D10.0mm_P5.00mm,Econd 1000uF10V10x13GF,C55565640,1,"10 mm diameter, 13 mm tall, 5 mm lead pitch"
+always fitted,1,D1,MBR120 / 1N5819W,D_SOD-123,TWGMC 1N5819W,C727115,1,40 V 1 A Schottky
+always fitted,1,D4,SS54 or S5B,D_SMC,LGE SS54,C330398,1,40 V 5 A Schottky
+always fitted,1,F1,"mini blade holder, 3 A fuse",Fuseholder_Blade_Mini_Keystone_3568,Keystone 3568,C5249699,1,"LCSC stock was 0 on 2026-11-22. Possible substitute XFCN XF-508P-B-B (C19727305): pins 9.80 x 3.40 mm against this footprint's 9.92 x 3.40 mm, a tight fit in the 1.78 mm holes, not tried"
+always fitted,1,in F1,3 A mini blade fuse,,any 3 A mini (ATM) blade fuse,,1,no LCSC number chosen
+always fitted,1,J2,5V in,"TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal","Phoenix Contact 1715721 (MKDS 1,5/2-5,08)",C480516,1,
+do not populate,35,T0In1 ... T8Out2 (35 headers),2x2 diamond,drawn in the build script,,,0,"pads for v2 tile headers, left empty"

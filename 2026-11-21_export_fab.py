@@ -53,8 +53,26 @@ def group(ref):
     if ref.startswith("TP"):
         return None                                   # bare test pads
     if ref[0] == "T" and ("In" in ref or "Out" in ref):
-        return "optional, for v2 tiles"
+        return "do not populate"
     return "always fitted"
+
+
+# Sourcing, keyed by the first reference of a BOM line: (part to buy, LCSC number, buy qty, note).
+# Every LCSC number was looked up on lcsc.com on 2026-11-22 and matches the description.
+SOURCE = {
+    "A1": ("Hong Cheng HC-PM254-8.5H-1x20PZ, 1x20 socket, 8.5 mm tall", "C22373906", 2,
+           "two sockets for one Pico 2 W; the Pico itself is not on this list"),
+    "C1": ("Econd 1000uF10V10x13GF", "C55565640", 1, "10 mm diameter, 13 mm tall, 5 mm lead pitch"),
+    "D1": ("TWGMC 1N5819W", "C727115", 1, "40 V 1 A Schottky"),
+    "D4": ("LGE SS54", "C330398", 1, "40 V 5 A Schottky"),
+    "F1": ("Keystone 3568", "C5249699", 1,
+           "LCSC stock was 0 on 2026-11-22. Possible substitute XFCN XF-508P-B-B (C19727305): pins "
+           "9.80 x 3.40 mm against this footprint's 9.92 x 3.40 mm, a tight fit in the 1.78 mm holes, not tried"),
+    "J2": ("Phoenix Contact 1715721 (MKDS 1,5/2-5,08)", "C480516", 1, ""),
+}
+# Parts with no footprint of their own.
+EXTRA = [("always fitted", 1, "in F1", "3 A mini blade fuse", "", "any 3 A mini (ATM) blade fuse", "", 1,
+          "no LCSC number chosen")]
 
 
 def main():
@@ -90,15 +108,24 @@ def main():
             continue
         key = (g, r["value"], r["footprint"] or "drawn in the build script")
         parts.setdefault(key, []).append(r["ref"])
-    order = {"always fitted": 0, "optional, for v2 tiles": 1}
+    order = {"always fitted": 0, "do not populate": 1}
     bom = os.path.join(FAB, f"{DATE}_bom.csv")
     with open(bom, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["group", "qty", "references", "value", "footprint"])
+        w.writerow(["group", "qty", "references", "value", "footprint", "part to buy", "LCSC", "buy qty", "note"])
         for (g, value, fp), refs in sorted(parts.items(), key=lambda kv: (order[kv[0][0]], kv[1])):
             refs = sorted(refs, key=lambda x: (len(x), x))
             shown = ", ".join(refs) if len(refs) <= 8 else f"{refs[0]} ... {refs[-1]} ({len(refs)} headers)"
-            w.writerow([g, len(refs), shown, value, fp])
+            if g == "do not populate":
+                src = ("", "", 0, "pads for v2 tile headers, left empty")
+            elif refs[0] in SOURCE:
+                src = SOURCE[refs[0]]
+            else:
+                fail(f"no sourcing entry for {refs[0]}")
+            w.writerow([g, len(refs), shown, value, fp, *src])
+            if refs[0] == "F1":
+                for row in EXTRA:
+                    w.writerow(row)
     print(f"{len(parts)} BOM lines -> {os.path.basename(bom)}")
 
 

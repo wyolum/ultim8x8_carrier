@@ -474,7 +474,7 @@
  (global_label "+5V" (shape passive) (at 77.47 97.79 0) (effects (font (size 1.27 1.27)) (justify left)) (uuid "0e2fa31c-b39a-549f-91dd-0a673ba53702") (property "Intersheetrefs" "" (at 77.47 97.79 0) (effects (font (size 1.27 1.27)) (hide yes))))
  (symbol (lib_id "carrier:F1") (at 69.85 97.79 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "241369f2-50e6-5ce5-a40b-9ec1e72bafdf")
   (property "Reference" "F1" (at 69.85 92.71 0) (effects (font (size 1.27 1.27))))
-  (property "Value" "mini blade fuse, rating to suit the supply" (at 69.85 102.87 0) (effects (font (size 1.27 1.27))))
+  (property "Value" "mini blade holder, 3 A fuse" (at 69.85 102.87 0) (effects (font (size 1.27 1.27))))
   (property "Footprint" "" (at 69.85 97.79 0) (effects (font (size 1.27 1.27)) (hide yes)))
   (property "Datasheet" "" (at 69.85 97.79 0) (effects (font (size 1.27 1.27)) (hide yes)))
   (property "Description" "" (at 69.85 97.79 0) (effects (font (size 1.27 1.27)) (hide yes)))

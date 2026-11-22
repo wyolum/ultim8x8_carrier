@@ -9333,7 +9333,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "mini blade fuse, rating to suit the supply"
+		(property "Value" "mini blade holder, 3 A fuse"
 			(at 4.96 -6.07 180)
 			(layer "B.Fab")
 			(uuid "b59e2133-9496-4347-9b3e-2a10f179d864")
