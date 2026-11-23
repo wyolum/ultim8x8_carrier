@@ -149,6 +149,12 @@ Please check:
 - **Stack height.** The tiles sit on 10 mm standoffs. A standard pin header and socket stack to about 11 mm.
 - Whether these are worth having on a board whose standoffs already carry every signal. They are the most intricate routing on the board and are easy to remove.
 
+## Assembly notes
+
+- **No washers on the tile screws or standoffs.** Each tile pad is 7.0 mm across and the opposite rail's pour starts 0.4 mm beyond it, so anything wider than about 7.8 mm sits over the other rail with only solder mask between. M3 pan heads (about 5.5 to 6 mm) and 5.5 mm hex standoffs (6.35 mm across corners) stay inside the pad.
+- **Check polarity at J2 with a meter before fitting the tiles.** J2 pin 1 (square pad) is GND. Polarity can only go wrong where the barrel jack is wired to J2.
+- **Use a supply rated 5 A or less.** D4 is a 5 A part. With a reversed supply inside that limit it holds the rail at about -0.5 V whether or not the 3 A fuse opens. A larger supply can overheat D4 before the fuse blows.
+
 ## Schematic and fab files
 
 The [schematic](docs/2026-11-22_schematic.pdf) ([image](docs/2026-11-22_schematic.png)) has no wires: every pin carries a label, and pins with the same label are on the same net. I exported its netlist with `kicad-cli` and compared it with the board pin by pin: 232 connected pins, 24 nets, no differences. Opening it in KiCad gives one library warning per symbol, because the symbols exist only inside the sheet.
